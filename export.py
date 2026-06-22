@@ -16,7 +16,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent / "backend"))
 
-DATA_DIR = Path(__file__).parent / "frontend" / "data"
+DATA_DIR = Path(__file__).parent / "docs" / "data"
 
 
 def export_to_json() -> int:
@@ -62,7 +62,7 @@ def push_to_github(commit_msg: str = "") -> bool:
         commit_msg = f"data: update events {datetime.now().strftime('%Y-%m-%d %H:%M')}"
 
     steps = [
-        (["git", "add", "frontend/data/"], "staging data files"),
+        (["git", "add", "docs/data/"], "staging data files"),
         (["git", "commit", "-m", commit_msg], "committing"),
         (["git", "push"], "pushing to GitHub"),
     ]

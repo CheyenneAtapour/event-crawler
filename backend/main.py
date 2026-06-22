@@ -18,7 +18,7 @@ from scheduler import setup_scheduler, shutdown_scheduler
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
-FRONTEND = Path(__file__).parent.parent / "frontend"
+FRONTEND = Path(__file__).parent.parent / "docs"
 
 app = FastAPI(title="San Diego Events", docs_url="/api/docs")
 

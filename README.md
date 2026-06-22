@@ -117,7 +117,7 @@ backend/
 │   ├── grow_sources.py  Web search (Google/Brave/DDG) → grow sources.txt
 │   ├── gmaps.py         Venue category discovery → grow sources.txt
 │   └── discover.py      Link-crawl discovery → discovered_sources.json
-frontend/
+docs/
 ├── index.html           Calendar UI (FullCalendar v6)
 ├── style.css
 └── app.js
