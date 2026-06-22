@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>San Diego Events</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <span class="logo">&#9788;</span>
+      <h1>San Diego Events</h1>
+    </div>
+    <div class="header-right">
+      <select id="source-filter">
+        <option value="">All sources</option>
+      </select>
+    </div>
+  </header>
+
+  <main>
+    <div id="calendar-col">
+      <div id="calendar"></div>
+    </div>
+
+    <aside id="event-panel" class="closed">
+      <div id="panel-header">
+        <div>
+          <div id="panel-date"></div>
+          <div id="panel-count"></div>
+        </div>
+        <button id="close-panel" aria-label="Close">&times;</button>
+      </div>
+      <div id="event-list"></div>
+    </aside>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
