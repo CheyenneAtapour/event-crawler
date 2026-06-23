@@ -25,6 +25,7 @@ VENUES = [
     ("The Quartyard",         "https://www.thequartyard.com/events",   "parse_generic_json_ld"),
     ("Whistle Stop Bar",      "https://www.whistlestopbar.com/events", "parse_generic_json_ld"),
     ("4th & B",               "https://www.4thandb.com/calendar/",     "parse_generic_json_ld"),
+    ("EQ San Diego",          "https://www.eqsandiego.com/",           "parse_generic_json_ld"),
 ]
 
 
@@ -65,7 +66,13 @@ class VenuesScraper(BaseScraper):
                 data = json.loads(script.string or "")
             except Exception:
                 continue
-            items = data if isinstance(data, list) else [data]
+            # Flatten: handle plain list, single object, and @graph wrapper
+            if isinstance(data, list):
+                items = data
+            elif "@graph" in data:
+                items = data["@graph"]
+            else:
+                items = [data]
             for item in items:
                 if item.get("@type") not in ("Event", "MusicEvent", "SocialEvent"):
                     continue

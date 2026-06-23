@@ -1960,3 +1960,15 @@ venue        | https://prohibitionsd.com/blog/events/one-of-the-g | https://proh
 venue        | Todaytix                               | https://www.todaytix.com/sydney/shows/24440
 venue        | Outlook                                | https://outlook.office.com/owa?path=/calendar/action/compose&rru=addsubscription&url=webcal%3A%2F%2Fbalboapark.org%2F%3Fpost_type%3Dtribe_events%26ical%3D1%26eventDisplay%3Dlist&name=Balboa+Park+Balboa+Park+Events+|+Concerts,+Exhibitions+&+Activities+San+Diego
 venue        | Outlook                                | https://outlook.live.com/owa?path=/calendar/action/compose&rru=addsubscription&url=webcal%3A%2F%2Fbalboapark.org%2F%3Fpost_type%3Dtribe_events%26ical%3D1%26eventDisplay%3Dlist&name=Balboa+Park+Balboa+Park+Events+|+Concerts,+Exhibitions+&+Activities+San+Diego
+
+# ── Added manually ───────────────────────────────────────────────────────────
+venue        | EQ San Diego                          | https://www.eqsandiego.com/
+facebook     | EQ San Diego                          | https://www.facebook.com/EQSanDiego/events/
+instagram    | EQ San Diego                          | https://www.instagram.com/eqsandiego
+venue        | La Jolla Village Merchants Assoc.      | https://www.lajollabythesea.com/events/
+venue        | Hillcrest Business Assoc.              | https://hillcrestsd.com/events/
+venue        | North Park Main Street                 | https://www.northparkmainstreet.com/events/
+venue        | Ocean Beach Mainstreet                 | https://oceanbeachsandiego.com/events/
+venue        | Pacific Beach Town Council             | https://www.pacificbeach.org/events/
+venue        | Little Italy Food Hall                 | https://www.littleitalysd.com/events/
+aggregator   | San Diego Tourism Authority (SDTA)     | https://www.sandiego.org/events-festivals

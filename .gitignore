@@ -1,4 +1,5 @@
 backend/.venv/
+backend/sessions/
 __pycache__/
 *.pyc
 .env

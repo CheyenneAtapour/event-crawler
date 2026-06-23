@@ -18,6 +18,7 @@ from bs4 import BeautifulSoup
 from .base import BaseScraper
 from .http import PoliteCrawler
 from .venues import VenuesScraper
+from .social import _session_file
 
 logger = logging.getLogger(__name__)
 
@@ -244,13 +245,15 @@ class DynamicVenuesScraper(VenuesScraper):
             return []
 
         events = []
+        session = _session_file("facebook")
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
             ctx = await browser.new_context(
                 user_agent=(
                     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
                     "AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36"
-                )
+                ),
+                storage_state=session,
             )
             page = await ctx.new_page()
             try:
@@ -306,13 +309,15 @@ class DynamicVenuesScraper(VenuesScraper):
             return []
 
         events = []
+        session = _session_file("instagram")
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
             ctx = await browser.new_context(
                 user_agent=(
                     "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) "
                     "AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1"
-                )
+                ),
+                storage_state=session,
             )
             page = await ctx.new_page()
             try:

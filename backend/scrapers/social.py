@@ -22,9 +22,18 @@ import asyncio
 import json
 import re
 from datetime import datetime, date
+from pathlib import Path
 from typing import Optional
 
 from .base import BaseScraper
+
+SESSIONS_DIR = Path(__file__).parent.parent / "sessions"
+
+
+def _session_file(site: str) -> Optional[str]:
+    """Return path to saved Playwright session state, or None if not logged in."""
+    p = SESSIONS_DIR / f"{site}.json"
+    return str(p) if p.exists() else None
 
 # ── San Diego venue Facebook pages ───────────────────────────────────────────
 # Format: (human_name, facebook_page_or_events_url)
@@ -62,6 +71,7 @@ VENUES_FACEBOOK = [
     ("Petco Park",             "https://www.facebook.com/padres/events/"),
     ("Snapdragon Stadium",     "https://www.facebook.com/snapdragonstadium/events/"),
     ("Del Mar Fairgrounds",    "https://www.facebook.com/SDFair/events/"),
+    ("EQ San Diego",           "https://www.facebook.com/EQSanDiego/events/"),
 ]
 
 # ── San Diego venue Instagram accounts ───────────────────────────────────────
@@ -82,6 +92,7 @@ VENUES_INSTAGRAM = [
     ("Winston's Beach Club",   "winstonssandiego"),
     ("Brick by Brick",         "bricksandiego"),
     ("Whistle Stop Bar",       "whistlestopbar"),
+    ("EQ San Diego",           "eqsandiego"),
 ]
 
 # Regex to detect event-like mentions in IG captions
@@ -109,6 +120,12 @@ class FacebookScraper(BaseScraper):
 
         all_events: list[dict] = []
 
+        session = _session_file("facebook")
+        if session:
+            self.logger.info("Facebook: using saved login session")
+        else:
+            self.logger.warning("Facebook: no session found — run 'python login.py facebook' for better results")
+
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
             ctx = await browser.new_context(
@@ -118,6 +135,7 @@ class FacebookScraper(BaseScraper):
                     "Chrome/124.0.0.0 Safari/537.36"
                 ),
                 locale="en-US",
+                storage_state=session,   # None = unauthenticated, path = logged in
             )
 
             for venue_name, fb_url in VENUES_FACEBOOK:
@@ -139,9 +157,9 @@ class FacebookScraper(BaseScraper):
         events: list[dict] = []
         try:
             await page.goto(url, wait_until="domcontentloaded", timeout=30_000)
-            await page.wait_for_timeout(2000)
+            await page.wait_for_timeout(2500)
 
-            # FB renders events as JSON-LD on public /events pages for logged-out users
+            # 1. JSON-LD (works logged out for public events)
             ld_blocks = await page.evaluate("""
                 () => [...document.querySelectorAll('script[type="application/ld+json"]')]
                        .map(s => s.textContent)
@@ -159,17 +177,32 @@ class FacebookScraper(BaseScraper):
                     if ev:
                         events.append(ev)
 
-            # Fallback: scrape visible event card text
+            # 2. Logged-in: scrape rendered event cards (much richer data)
             if not events:
-                cards = await page.query_selector_all('[data-testid="event-card"], [role="article"]')
-                for card in cards[:30]:
-                    text = await card.inner_text()
-                    ev = self._parse_card_text(text, venue_name)
-                    if ev:
-                        link_el = await card.query_selector("a[href*='/events/']")
-                        if link_el:
-                            ev["url"] = await link_el.get_attribute("href")
-                        events.append(ev)
+                await page.wait_for_timeout(1000)
+                cards = await page.query_selector_all(
+                    '[data-testid="event-card"], '
+                    'div[role="article"] a[href*="/events/"],'
+                    'a[href*="/events/"][role="link"]'
+                )
+                seen_urls: set[str] = set()
+                for card in cards[:50]:
+                    try:
+                        # Get the event link
+                        link_el = await card.query_selector("a[href*='/events/']") or card
+                        href = await link_el.get_attribute("href") or ""
+                        if not href or href in seen_urls:
+                            continue
+                        seen_urls.add(href)
+
+                        text = await card.inner_text()
+                        ev = self._parse_card_text(text, venue_name)
+                        if ev:
+                            ev["url"] = href if href.startswith("http") else f"https://www.facebook.com{href}"
+                            events.append(ev)
+                    except Exception:
+                        continue
+
         finally:
             await page.close()
         return events
@@ -241,6 +274,12 @@ class InstagramScraper(BaseScraper):
 
         all_events: list[dict] = []
 
+        session = _session_file("instagram")
+        if session:
+            self.logger.info("Instagram: using saved login session")
+        else:
+            self.logger.warning("Instagram: no session found — run 'python login.py instagram' for better results")
+
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
             ctx = await browser.new_context(
@@ -249,6 +288,7 @@ class InstagramScraper(BaseScraper):
                     "AppleWebKit/605.1.15 (KHTML, like Gecko) "
                     "Version/17.0 Mobile/15E148 Safari/604.1"
                 ),
+                storage_state=session,
             )
             for venue_name, handle in VENUES_INSTAGRAM:
                 try:
