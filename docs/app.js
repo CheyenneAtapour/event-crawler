@@ -111,6 +111,8 @@ function openPanel(dateStr, events) {
 
   panel.classList.remove("closed");
   list.scrollTop = 0;
+  // Resize calendar after the CSS transition completes (250ms)
+  setTimeout(() => calendar.updateSize(), 260);
 }
 
 function renderCard(e) {
@@ -195,6 +197,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("close-panel").addEventListener("click", () => {
     document.getElementById("event-panel").classList.add("closed");
+    setTimeout(() => calendar.updateSize(), 260);
   });
 
   document.getElementById("source-filter").addEventListener("change", (e) => {
