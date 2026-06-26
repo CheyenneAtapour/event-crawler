@@ -10,7 +10,7 @@ Usage:
     python crawl.py            # full run (sources + events)
     python crawl.py --events   # skip source discovery, just scrape events
     python crawl.py --sources  # just grow sources, skip event scraping
-    python crawl.py --no-vpn   # skip NordVPN (VPN is on by default for source discovery)
+    python crawl.py --vpn      # connect NordVPN before searching, disconnect after
 """
 import sys
 import asyncio
@@ -20,6 +20,10 @@ from pathlib import Path
 
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent / "backend"))
+
+# Load .env before importing any scrapers so API keys are available
+from dotenv import load_dotenv
+load_dotenv(Path(__file__).parent / ".env")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -59,14 +63,14 @@ async def main(run_sources: bool = True, run_events: bool = True, use_vpn: bool 
         banner("STEP 1 — Growing sources via web search (Brave + Google + DDG)")
         t = time.monotonic()
         from scrapers.grow_sources import run_grow
-        added = await run_grow(crawl_depth=1)
+        added = await run_grow(crawl_depth=1, use_vpn=use_vpn)
         logger.info(f"grow_sources done — {added} new sources added  [{elapsed(t)}]")
 
         # ── Step 2: Discover venues by category ───────────────────────────────
         banner("STEP 2 — Discovering venues by category (music, bars, comedy…)")
         t = time.monotonic()
         from scrapers.gmaps import run_gmaps_discovery
-        added = await run_gmaps_discovery()
+        added = await run_gmaps_discovery(use_vpn=use_vpn)
         logger.info(f"gmaps discovery done — {added} new sources added  [{elapsed(t)}]")
 
     # ── VPN disconnect ────────────────────────────────────────────────────────
@@ -99,5 +103,5 @@ if __name__ == "__main__":
     args = set(sys.argv[1:])
     run_sources = "--events"  not in args
     run_events  = "--sources" not in args
-    use_vpn     = "--no-vpn"  not in args
+    use_vpn     = "--vpn"     in args
     asyncio.run(main(run_sources=run_sources, run_events=run_events, use_vpn=use_vpn))

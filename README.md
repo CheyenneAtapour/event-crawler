@@ -29,8 +29,8 @@ python crawl.py
 # Just scrape events from known sources (use when searches are throttled)
 python crawl.py --events
 
-# Skip NordVPN (VPN is used by default for source discovery steps)
-python crawl.py --no-vpn
+# Connect NordVPN before searching (bypasses DDG/Bing IP blocks)
+python crawl.py --vpn
 
 # Just grow sources.txt, skip event scraping
 python crawl.py --sources

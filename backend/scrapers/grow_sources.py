@@ -25,6 +25,7 @@ import httpx
 from bs4 import BeautifulSoup
 
 from .http import PoliteCrawler
+from .search_state import SearchState
 
 logger = logging.getLogger(__name__)
 
@@ -315,26 +316,28 @@ async def search_google(query: str, client: PoliteCrawler) -> list[tuple[str, st
 
 class VPNSearcher:
     """
-    Wraps search_all with automatic VPN rotation on consecutive zero-result queries.
-    After ROTATE_AFTER empty searches in a row, rotates to a fresh NordVPN server
-    and retries the current query once.
+    Wraps search_all with optional VPN rotation on consecutive zero-result queries.
+    Only rotates when use_vpn=True (i.e. --vpn was passed to crawl.py).
+    Also records per-query results in SearchState.
     """
-    ROTATE_AFTER = 3   # consecutive zero-result queries before rotating
+    ROTATE_AFTER = 3
 
-    def __init__(self):
+    def __init__(self, use_vpn: bool = False, state: Optional[SearchState] = None):
         self._streak = 0
+        self._use_vpn = use_vpn
+        self._state = state
 
     async def search(self, query: str, client: PoliteCrawler) -> list[tuple[str, str]]:
-        results = await search_all(query, client)
+        results = await search_all(query, client, state=self._state)
 
         if not results:
             self._streak += 1
-            if self._streak >= self.ROTATE_AFTER:
+            if self._use_vpn and self._streak >= self.ROTATE_AFTER:
                 self._streak = 0
                 rotated = self._rotate()
                 if rotated:
                     print(f"  🔄 VPN rotated — retrying: {query}")
-                    results = await search_all(query, client)
+                    results = await search_all(query, client, state=self._state)
         else:
             self._streak = 0
 
@@ -352,7 +355,11 @@ class VPNSearcher:
             return False
 
 
-async def search_all(query: str, client: PoliteCrawler) -> list[tuple[str, str]]:
+async def search_all(
+    query: str,
+    client: PoliteCrawler,
+    state: Optional["SearchState"] = None,
+) -> list[tuple[str, str]]:
     """
     Run available search engines in priority order, merging and deduplicating.
 
@@ -362,9 +369,8 @@ async def search_all(query: str, client: PoliteCrawler) -> list[tuple[str, str]]
       3. DDG Lite    — no key, but often blocked by ISPs/VPNs
       4. DDG PW      — Playwright fallback for DDG, slowest
 
-    If all fail (e.g. DDG blocked and no API keys set), returns [] gracefully
-    and the crawler falls back to scraping already-known sources.
-    Set at least BRAVE_API_KEY in .env for reliable results.
+    Records results in SearchState so zero-result queries get prioritised
+    on the next run.
     """
     seen: set[str] = set()
     merged: list[tuple[str, str]] = []
@@ -376,7 +382,10 @@ async def search_all(query: str, client: PoliteCrawler) -> list[tuple[str, str]]
                 merged.append((title, url))
 
     if not merged:
-        print(f"     ⚠️  no search results — set BRAVE_API_KEY in .env for reliable searches")
+        print(f"     ⚠️  no search results — set GOOGLE_API_KEY or BRAVE_API_KEY in .env")
+
+    if state is not None:
+        state.record(query, len(merged))
 
     return merged
 
@@ -566,6 +575,7 @@ async def run_grow(
     crawl_depth: int = 1,
     min_score: int = 4,
     delay: float = 1.2,
+    use_vpn: bool = False,
 ) -> int:
     """
     Run the grow cycle. Returns number of new sources added.
@@ -578,6 +588,10 @@ async def run_grow(
     existing_seeds = load_existing_seeds()
     candidates: dict[str, tuple[str, str]] = {}  # url → (type, title)
 
+    state = SearchState()
+    queries = state.prioritised(queries)
+    print(f"  search state: {state.summary()}")
+
     async with PoliteCrawler(min_delay=delay, max_retries=3, backoff_base=2.0) as client:
 
         # ── Phase 1: search ───────────────────────────────────────────────────
@@ -585,7 +599,7 @@ async def run_grow(
         print(f"PHASE 1 — Web search ({len(queries)} queries)")
         print(f"{'─'*60}")
         search_urls: list[tuple[str, str]] = []
-        searcher = VPNSearcher()
+        searcher = VPNSearcher(use_vpn=use_vpn, state=state)
 
         for q in queries:
             results = await searcher.search(q, client)
@@ -675,6 +689,10 @@ async def run_grow(
                     scored.append((sc, typ, link, link))
 
             scored.sort(reverse=True)
+
+    # Save search state so next run prioritises failed queries
+    state.save()
+    print(f"  search state saved: {state.summary()}")
 
     # ── Phase 5: write to sources.txt ─────────────────────────────────────────
     print(f"\n{'─'*60}")

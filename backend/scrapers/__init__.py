@@ -9,6 +9,7 @@ from .social import FacebookScraper, InstagramScraper
 from .dynamic_venues import DynamicVenuesScraper
 from .vibemap import VibeMapScraper
 from .sandiego_org import SanDiegoOrgScraper
+from .farmers_markets import FarmersMarketsScraper
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,7 @@ SCRAPERS = [
     DynamicVenuesScraper,   # reads sources.txt + finds social links per venue
     VibeMapScraper,         # La Jolla by the Sea + other Vibemap neighbourhood sites
     SanDiegoOrgScraper,     # SDTA official aggregator — ~900 events via Cludo API
+    FarmersMarketsScraper,  # 16 SD farmers markets, weekly recurring
 ]
 
 

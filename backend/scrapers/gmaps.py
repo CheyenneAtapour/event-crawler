@@ -35,6 +35,7 @@ from .grow_sources import (
     search_google,
     VPNSearcher,
 )
+from .search_state import SearchState
 
 logger = logging.getLogger(__name__)
 
@@ -141,6 +142,7 @@ async def run_gmaps_discovery(
     categories: list[str] | None = None,
     min_score: int = 4,
     delay: float = 1.0,
+    use_vpn: bool = False,
 ) -> int:
     """
     Discover San Diego venues via category searches, find their event pages,
@@ -157,7 +159,10 @@ async def run_gmaps_discovery(
         print(f"\n{'─'*60}")
         print(f"GOOGLE MAPS DISCOVERY — {len(categories)} venue categories")
         print(f"{'─'*60}")
-        searcher = VPNSearcher()
+        state = SearchState()
+        categories = state.prioritised(categories)
+        print(f"  search state: {state.summary()}")
+        searcher = VPNSearcher(use_vpn=use_vpn, state=state)
 
         for cat in categories:
             urls = _urls(await searcher.search(cat, client))
@@ -208,8 +213,10 @@ async def run_gmaps_discovery(
             deduped.append((t, n, u))
 
     added = append_to_sources(deduped, live=True)
+    state.save()
     print(f"\n{'═'*60}")
     print(f"  DONE — {added} new venue sources added")
+    print(f"  search state saved: {state.summary()}")
     print(f"{'═'*60}\n")
     return added
 
